@@ -117,9 +117,8 @@ class Content(object):
 
     def __init__(self, stream, length):
         super(Content, self).__init__()
-        self.stream = stream
         self.length = int(length)
-        self.stream.block(self)
+        self._data = stream.read(self.length)
 
     def dump_length(self):
         return self.length
@@ -128,23 +127,16 @@ class Content(object):
         return self
 
     def __next__(self):
-        if self.length == 0:
+        if self._data is None:
             raise StopIteration
 
-        readSize = min(self.length, self.CHUNK_SIZE)
-        data = self.stream.read(readSize, self)
-        self.length -= len(data)
-        if self.length == 0:
-            self.stream.unblock(self)
-
-        if len(data) != readSize:
-            self.stream.error("failed to read content")
-        return data
+        _data = self._data
+        self._data = None
+        return _data
     next = __next__
 
     def discard(self):
-        for data in self:
-            pass
+        pass
 
     def write(self, stream):
         for data in self:
